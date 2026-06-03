@@ -28,7 +28,7 @@ app.get('/stream', (req, res) => {
   const videoId = req.query.videoId;
   if (!videoId) return res.status(400).json({ error: 'videoId required' });
 
-  exec(`yt-dlp.exe -g "https://www.youtube.com/watch?v=${videoId}"`,
+  exec(`yt-dlp -g "https://www.youtube.com/watch?v=${videoId}"`,
     { cwd: __dirname },
     (error, stdout, stderr) => {
       if (error) return res.status(500).json({ error: error.message });
