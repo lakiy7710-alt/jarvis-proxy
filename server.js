@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const { exec } = require('child_process');
+const ytdl = require('ytdl-core');
 
 const app = express();
 app.use(cors());
@@ -24,18 +24,16 @@ app.post('/browse', async (req, res) => {
   }
 });
 
-app.get('/stream', (req, res) => {
+app.get('/stream', async (req, res) => {
   const videoId = req.query.videoId;
   if (!videoId) return res.status(400).json({ error: 'videoId required' });
-
-  exec(`yt-dlp -g "https://www.youtube.com/watch?v=${videoId}"`,
-    { cwd: __dirname },
-    (error, stdout, stderr) => {
-      if (error) return res.status(500).json({ error: error.message });
-      const urls = stdout.trim().split('\n');
-      res.json({ streamUrl: urls[0] });
-    }
-  );
+  try {
+    const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`);
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
+    res.json({ streamUrl: format.url });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.listen(3000, () => console.log('Server ready: http://localhost:3000'));
