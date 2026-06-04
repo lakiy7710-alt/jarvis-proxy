@@ -35,7 +35,8 @@ app.get('/stream', async (req, res) => {
   try {
     const info = await yt.getInfo(videoId);
     const format = info.chooseFormat({ type: 'audio', quality: 'best' });
-    res.json({ streamUrl: format.decipher(yt.session.player) });
+    const url = format.url;
+    res.json({ streamUrl: url });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
