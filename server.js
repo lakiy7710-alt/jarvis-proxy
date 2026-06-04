@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const ytdl = require('ytdl-core');
+const { Innertube } = require('youtubei.js');
 
 const app = express();
 app.use(cors());
@@ -14,6 +14,11 @@ const HEADERS = {
   'User-Agent': 'Mozilla/5.0',
   'Origin': 'https://music.youtube.com'
 };
+
+let yt;
+(async () => {
+  yt = await Innertube.create();
+})();
 
 app.post('/browse', async (req, res) => {
   try {
@@ -28,9 +33,9 @@ app.get('/stream', async (req, res) => {
   const videoId = req.query.videoId;
   if (!videoId) return res.status(400).json({ error: 'videoId required' });
   try {
-    const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${videoId}`);
-    const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio' });
-    res.json({ streamUrl: format.url });
+    const info = await yt.getInfo(videoId);
+    const format = info.chooseFormat({ type: 'audio', quality: 'best' });
+    res.json({ streamUrl: format.decipher(yt.session.player) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
