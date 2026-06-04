@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const { Innertube } = require('youtubei.js');
 
 const app = express();
 app.use(cors());
@@ -14,11 +13,6 @@ const HEADERS = {
   'User-Agent': 'Mozilla/5.0',
   'Origin': 'https://music.youtube.com'
 };
-
-let yt;
-(async () => {
-  yt = await Innertube.create({ retrieve_player: true });
-})();
 
 app.post('/browse', async (req, res) => {
   try {
@@ -33,10 +27,25 @@ app.get('/stream', async (req, res) => {
   const videoId = req.query.videoId;
   if (!videoId) return res.status(400).json({ error: 'videoId required' });
   try {
-    const info = await yt.getInfo(videoId);
-    const format = info.chooseFormat({ type: 'audio', quality: 'best' });
-    const url = format.decipher(yt.session.player);
-    res.json({ streamUrl: url });
+    const body = {
+      videoId,
+      context: {
+        client: {
+          clientName: 'ANDROID_MUSIC',
+          clientVersion: '6.42.52',
+          androidSdkVersion: 30,
+          hl: 'en'
+        }
+      }
+    };
+    const r = await axios.post(
+      `https://music.youtube.com/youtubei/v1/player?key=${KEY}`,
+      body,
+      { headers: { ...HEADERS, 'User-Agent': 'com.google.android.apps.youtube.music/6.42.52 (Linux; U; Android 11)' } }
+    );
+    const formats = r.data?.streamingData?.adaptiveFormats || [];
+    const audio = formats.filter(f => f.mimeType?.includes('audio/mp4')).sort((a, b) => b.bitrate - a.bitrate)[0];
+    res.json({ streamUrl: audio?.url || null });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
