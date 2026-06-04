@@ -17,7 +17,7 @@ const HEADERS = {
 
 let yt;
 (async () => {
-  yt = await Innertube.create();
+  yt = await Innertube.create({ retrieve_player: true });
 })();
 
 app.post('/browse', async (req, res) => {
@@ -35,7 +35,7 @@ app.get('/stream', async (req, res) => {
   try {
     const info = await yt.getInfo(videoId);
     const format = info.chooseFormat({ type: 'audio', quality: 'best' });
-    const url = format.url;
+    const url = format.decipher(yt.session.player);
     res.json({ streamUrl: url });
   } catch (e) {
     res.status(500).json({ error: e.message });
